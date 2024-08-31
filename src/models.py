@@ -61,3 +61,50 @@ class Planet(db.Model):
             "population": self.population,
             "surface_water": self.surface_water
         }
+
+class Gender(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+
+    def __repr__(self):
+        return f"<Gender {self.name}>"
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name
+        }
+
+class Character(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    homeworld = db.Column(db.Integer, db.ForeignKey("planet.id"))
+    eye_color_id = db.Column(db.Integer, db.ForeignKey("color.id"))
+    hair_color_id = db.Column(db.Integer, db.ForeignKey("color.id"))
+    skin_color_id = db.Column(db.Integer, db.ForeignKey("color.id"))
+    gender_id = db.Column(db.Integer, db.ForeignKey("gender.id"))
+    name = db.Column(db.String, nullable=False)
+    birth_year = db.Column(db.String)
+    height = db.Column(db.Float, nullable=False)
+    mass = db.Column(db.Float, nullable=False)
+    url = db.Column(db.String, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+
+    def __repr__(self):
+        return f"<Character {self.name}>"
+    
+    def serialize(self):
+        return {
+            "id": self.id,
+            "homeworld": self.homeworld,
+            "eye_color_id": self.eye_color_id,
+            "hair_color_id": self.hair_color_id,
+            "skin_color_id": self.skin_color_id,
+            "name": self.name,
+            "birth_year": self.birth_year,
+            "gender_id": self.gender_id,
+            "height": self.height,
+            "mass": self.mass
+        }
