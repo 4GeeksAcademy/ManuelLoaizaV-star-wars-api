@@ -5,9 +5,9 @@ import os
 from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from flask_cors import CORS
-from utils import generate_sitemap, validate_color
+from utils import generate_sitemap, validate_color, validate_gender
 from admin import setup_admin
-from models import db, Character, Color, EntityType, Favorite, Gender, Planet, User
+from models import db, Character, Color, Gender, Planet, User
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -63,6 +63,35 @@ def fetch_gender_by_id(gender_id):
         if gender is None:
             return jsonify({ "message": f"Gender with ID {gender_id} not found." }), 404
         return jsonify(gender.serialize()), 200
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/genders", methods=["POST"])
+def create_gender():
+    data = request.json
+    is_valid, errors = validate_gender(data)
+    if not is_valid:
+        raise InvalidAPIUsage(
+            message="Unprocessable Entity",
+            status_code=422,
+            payload=errors
+        )
+    try:
+        new_gender = Gender(name=data["name"])
+        db.session.add(new_gender)
+        db.session.commit()
+        return jsonify(new_gender.serialize()), 201
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/genders/<int:gender_id>", methods=["DELETE"])
+def delete_gender(gender_id):
+    try:
+        gender = Gender.query.get(gender_id)
+        if gender is not None:
+            db.session.delete(gender)
+            db.session.commit()
+        return (""), 204
     except Exception as e:
         return jsonify({ "message": str(e) }), 500
 

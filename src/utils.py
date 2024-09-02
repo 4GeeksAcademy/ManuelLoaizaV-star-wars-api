@@ -48,3 +48,6 @@ def validate_color(payload):
         errors["extra_keys"] = ",".join(extra_keys)
     
     return (not bool(errors), errors)
+
+def validate_gender(payload):
+    return validate_color(payload)
