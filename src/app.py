@@ -5,10 +5,9 @@ import os
 from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from flask_cors import CORS
-from utils import APIException, generate_sitemap
+from utils import generate_sitemap, validate_color
 from admin import setup_admin
-from models import db, Character, Color, Gender, Planet, User
-#from models import Person
+from models import db, Character, Color, EntityType, Favorite, Gender, Planet, User
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -25,24 +24,29 @@ db.init_app(app)
 CORS(app)
 setup_admin(app)
 
-# Handle/serialize errors like a JSON object
-@app.errorhandler(APIException)
-def handle_invalid_usage(error):
-    return jsonify(error.to_dict()), error.status_code
+class InvalidAPIUsage(Exception):
+    status_code = 400
+
+    def __init__(self, message, status_code=None, payload=None):
+        super().__init__()
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv["message"] = self.message
+        return rv
+
+@app.errorhandler(InvalidAPIUsage)
+def invalid_api_usage(e):
+    return jsonify(e.to_dict()), e.status_code
 
 # generate sitemap with all your endpoints
 @app.route('/')
 def sitemap():
     return generate_sitemap(app)
-
-@app.route('/user', methods=['GET'])
-def handle_hello():
-
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
-
-    return jsonify(response_body), 200
 
 @app.route("/genders")
 def fetch_genders():
@@ -77,6 +81,35 @@ def fetch_color_by_id(color_id):
         if color is None:
             return jsonify({ "message": f"Color with ID {color_id} not found." }), 404
         return jsonify(color.serialize()), 200
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/colors", methods=["POST"])
+def create_color():
+    data = request.json
+    is_valid, errors = validate_color(data)
+    if not is_valid:
+        raise InvalidAPIUsage(
+            message="Unprocessable Entity",
+            status_code=422,
+            payload=errors
+        )
+    try:
+        new_color = Color(name=data["name"])
+        db.session.add(new_color)
+        db.session.commit()
+        return jsonify(new_color.serialize()), 201
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/colors/<int:color_id>", methods=["DELETE"])
+def delete_color(color_id):
+    try:
+        color = Color.query.get(color_id)
+        if color is not None:
+            db.session.delete(color)
+            db.session.commit()
+        return (""), 204
     except Exception as e:
         return jsonify({ "message": str(e) }), 500
 
