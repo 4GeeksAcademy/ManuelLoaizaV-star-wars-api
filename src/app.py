@@ -4,7 +4,7 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from utils import generate_sitemap, validate_character, validate_color, validate_gender, validate_planet
 from admin import setup_admin
-from models import db, Character, Color, Entity, Gender, Planet, User
+from models import db, Character, Color, Entity, Favorite, Gender, Planet, User
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -115,24 +115,24 @@ def populate_db():
 
         luke = Character(
             name="Luke Skywalker",
-            homeworld_id=1,
+            homeworld_id=tatooine.id,
             height=172,
             mass=77,
-            hair_color_id=5,
-            skin_color_id=4,
-            eye_color_id=1,
+            hair_color_id=blond.id,
+            skin_color_id=fair.id,
+            eye_color_id=blue.id,
             birth_year="19BBY",
-            gender_id=1
+            gender_id=male.id
         )
         vader = Character(
             name="Darth Vader",
-            homeworld_id=1,
+            homeworld_id=tatooine.id,
             height=202,
             mass=136,
-            skin_color_id=6,
-            eye_color_id=7,
+            skin_color_id=white.id,
+            eye_color_id=yellow.id,
             birth_year="41.9BBY",
-            gender_id=1
+            gender_id=male.id
         )
         db.session.add(luke)
         db.session.add(vader)
@@ -147,6 +147,33 @@ def populate_db():
         db.session.add(starship)
 
         db.session.commit()
+
+        manuel_vader = Favorite(
+            user_id=manuel.id,
+            entity_id=vader.id,
+            entity_type_id=character.id
+        )
+        manuel_tatooine = Favorite(
+            user_id=manuel.id,
+            entity_id=tatooine.id,
+            entity_type_id=planet.id
+        )
+        astrid_luke = Favorite(
+            user_id=astrid.id,
+            entity_id=luke.id,
+            entity_type_id=character.id
+        )
+        frank_tatooine = Favorite(
+            user_id=frank.id,
+            entity_id=tatooine.id,
+            entity_type_id=planet.id
+        )
+        db.session.add(manuel_vader)
+        db.session.add(manuel_tatooine)
+        db.session.add(astrid_luke)
+        db.session.add(frank_tatooine)
+        db.session.commit()
+
         return (""), 204
     except Exception as e:
         return jsonify({ "message": str(e) }), 500
@@ -429,6 +456,82 @@ def fetch_user_by_id(user_id):
         if user is None:
             return jsonify({ "message": f"User with ID {user_id} not found." }), 404
         return jsonify(user.serialize()), 200
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/favorites/<int:user_id>")
+def fetch_favorites_by_user_id(user_id):
+    try:
+        user = User.query.get(user_id)
+        if user is None:
+            return jsonify({ "message": f"User with ID {user_id} not found." }), 404
+        favorites = Favorite.query.filter_by(user_id=user_id)
+        return jsonify(list(map(lambda favorite: favorite.serialize(), favorites))), 200
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+
+@app.route("/favorites/<int:user_id>/<string:entity_type_param>/<int:entity_id>", methods=["POST"])
+def create_favorite(user_id, entity_type_param, entity_id):
+    try:
+        user = User.query.get(user_id)
+        if user is None:
+            return jsonify({ "message": f"User with ID {user_id} not found." }), 404
+        
+        entity_type = Entity.query.filter_by(path=entity_type_param).one_or_none()
+        if entity_type is None:
+            return jsonify({ "message": f"Entity type {entity_type_param} not found." }), 404
+        
+        entity = None
+        if entity_type.path == "people":
+            entity = Character.query.get(entity_id)
+        elif entity_type.path == "planets":
+            entity = Planet.query.get(entity_id)
+        
+        if entity is None:
+            return jsonify({ "message": f"Entity with ID {entity_id} not found." }), 404
+        
+        new_favorite = Favorite(
+            user_id=user_id,
+            entity_type_id=entity_type.id,
+            entity_id=entity_id
+        )
+        db.session.add(new_favorite)
+        db.session.commit()
+        return jsonify(new_favorite.serialize()), 201
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/favorites/<int:user_id>/<string:entity_type_param>/<int:entity_id>", methods=["DELETE"])
+def delete_favorite(user_id, entity_type_param, entity_id):
+    try:
+        user = User.query.get(user_id)
+        if user is None:
+            return jsonify({ "message": f"User with ID {user_id} not found." }), 404
+        
+        entity_type = Entity.query.filter_by(path=entity_type_param).one_or_none()
+        if entity_type is None:
+            return jsonify({ "message": f"Entity type {entity_type_param} not found." }), 404
+        
+        entity = None
+        if entity_type.path == "people":
+            entity = Character.query.get(entity_id)
+        elif entity_type.path == "planets":
+            entity = Planet.query.get(entity_id)
+        
+        if entity is None:
+            return jsonify({ "message": f"Entity with ID {entity_id} not found." }), 404
+
+        favorite = Favorite.query.filter_by(
+            user_id=user_id,
+            entity_type_id=entity_type.id,
+            entity_id=entity_id
+        ).one_or_none()
+
+        if favorite is not None:
+            db.session.delete(favorite)
+            db.session.commit()
+        return (""), 204
     except Exception as e:
         return jsonify({ "message": str(e) }), 500
 

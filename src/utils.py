@@ -1,4 +1,4 @@
-from flask import jsonify, url_for
+from flask import url_for
 
 def has_no_empty_params(rule):
     defaults = rule.defaults if rule.defaults is not None else ()

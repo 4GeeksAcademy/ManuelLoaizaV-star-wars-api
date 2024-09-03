@@ -129,9 +129,10 @@ class Entity(db.Model):
 class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    entity_id = db.Column(db.Integer, db.ForeignKey("entity.id"), nullable=False)
+    entity_id = db.Column(db.Integer, nullable=False)
+    entity_type_id = db.Column(db.Integer, db.ForeignKey("entity.id"), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
-    db.UniqueConstraint(user_id, entity_id)
+    db.UniqueConstraint(user_id, entity_id, entity_type_id)
 
     def __repr__(self):
         return f"<Favorite {self.id}>"
@@ -141,5 +142,5 @@ class Favorite(db.Model):
             "id": self.id,
             "user_id": self.user_id,
             "entity_id": self.entity_id,
-            "entity_type": self.entity_type
+            "entity_type_id": self.entity_type_id
         }
