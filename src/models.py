@@ -5,14 +5,15 @@ db = SQLAlchemy()
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    hashed_password = db.Column(db.String(80), unique=False, nullable=False)
-    is_active = db.Column(db.Boolean, unique=False, nullable=False)
+    name = db.Column(db.String, nullable=False)
+    email = db.Column(db.String, unique=True, nullable=False)
+    hashed_password = db.Column(db.String(80), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
 
     def __repr__(self):
-        return '<User %r>' % self.email
+        return f"<User {self.email}>"
 
     def serialize(self):
         return {
@@ -79,7 +80,7 @@ class Gender(db.Model):
 
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    homeworld = db.Column(db.Integer, db.ForeignKey("planet.id"))
+    homeworld_id = db.Column(db.Integer, db.ForeignKey("planet.id"))
     eye_color_id = db.Column(db.Integer, db.ForeignKey("color.id"))
     hair_color_id = db.Column(db.Integer, db.ForeignKey("color.id"))
     skin_color_id = db.Column(db.Integer, db.ForeignKey("color.id"))
@@ -97,7 +98,7 @@ class Character(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "homeworld": self.homeworld,
+            "homeworld_id": self.homeworld_id,
             "eye_color_id": self.eye_color_id,
             "hair_color_id": self.hair_color_id,
             "skin_color_id": self.skin_color_id,
@@ -123,4 +124,22 @@ class Entity(db.Model):
             "id": self.id,
             "name": self.name,
             "path": self.path
+        }
+
+class Favorite(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    entity_id = db.Column(db.Integer, db.ForeignKey("entity.id"), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    db.UniqueConstraint(user_id, entity_id)
+
+    def __repr__(self):
+        return f"<Favorite {self.id}>"
+    
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "entity_id": self.entity_id,
+            "entity_type": self.entity_type
         }

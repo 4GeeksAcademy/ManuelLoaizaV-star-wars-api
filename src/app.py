@@ -1,11 +1,8 @@
-"""
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
-"""
 import os
 from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from flask_cors import CORS
-from utils import generate_sitemap, validate_color, validate_gender, validate_planet
+from utils import generate_sitemap, validate_character, validate_color, validate_gender, validate_planet
 from admin import setup_admin
 from models import db, Character, Color, Entity, Gender, Planet, User
 
@@ -42,10 +39,30 @@ class InvalidAPIUsage(Exception):
 @app.route("/populate")
 def populate_db():
     try:
-        manuel = User(email="manuel@4geeks.com", hashed_password="GzY0J2NkXIzKNSz8gE6eNw==", is_active=True)
-        astrid = User(email="astrid@4geeks.com", hashed_password="6W4A/Rclf3zB4Wb1wopFWA==", is_active=True)
-        frank = User(email="frank@4geeks.com", hashed_password="o1UZkTS9WDb1Baw7t6/Utg==", is_active=False)
-        david = User(email="david@4geeks.com", hashed_password="JOSCvfkN5ilidJ/jBXC1oA==", is_active=True)
+        manuel = User(
+            name="Manuel",
+            email="manuel@4geeks.com",
+            hashed_password="GzY0J2NkXIzKNSz8gE6eNw==",
+            is_active=True
+        )
+        astrid = User(
+            name="Astrid",
+            email="astrid@4geeks.com",
+            hashed_password="6W4A/Rclf3zB4Wb1wopFWA==",
+            is_active=True
+        )
+        frank = User(
+            name="Frank",
+            email="frank@4geeks.com",
+            hashed_password="o1UZkTS9WDb1Baw7t6/Utg==",
+            is_active=False
+        )
+        david = User(
+            name="David",
+            email="david@4geeks.com",
+            hashed_password="JOSCvfkN5ilidJ/jBXC1oA==",
+            is_active=True
+        )
         db.session.add(manuel)
         db.session.add(frank)
         db.session.add(astrid)
@@ -77,11 +94,15 @@ def populate_db():
         black = Color(name="black")
         fair = Color(name="fair")
         blond = Color(name="blond")
+        white = Color(name="white")
+        yellow = Color(name="yellow")
         db.session.add(blue)
         db.session.add(black)
         db.session.add(green)
         db.session.add(fair)
         db.session.add(blond)
+        db.session.add(white)
+        db.session.add(yellow)
 
         male = Gender(name="Male")
         female = Gender(name="Female")
@@ -89,6 +110,32 @@ def populate_db():
         db.session.add(male)
         db.session.add(female)
         db.session.add(unknown)
+
+        db.session.commit()
+
+        luke = Character(
+            name="Luke Skywalker",
+            homeworld_id=1,
+            height=172,
+            mass=77,
+            hair_color_id=5,
+            skin_color_id=4,
+            eye_color_id=1,
+            birth_year="19BBY",
+            gender_id=1
+        )
+        vader = Character(
+            name="Darth Vader",
+            homeworld_id=1,
+            height=202,
+            mass=136,
+            skin_color_id=6,
+            eye_color_id=7,
+            birth_year="41.9BBY",
+            gender_id=1
+        )
+        db.session.add(luke)
+        db.session.add(vader)
 
         character = Entity(name="Character", path="people")
         planet = Entity(name="Planet", path="planets")
@@ -240,6 +287,45 @@ def fetch_character_by_id(character_id):
         if character is None:
             return jsonify({ "message": f"Character with ID {character_id} not found." }), 404
         return jsonify(character.serialize()), 200
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/people", methods=["POST"])
+def create_character():
+    data = request.json
+    is_valid, errors = validate_character(data)
+    if not is_valid:
+        raise InvalidAPIUsage(
+            message="Unprocessable Entity",
+            status_code=422,
+            payload=errors
+        )
+    try:
+        new_character = Character(
+            homeworld_id=data.get("homeworld_id"),
+            eye_color_id=data.get("eye_color_id"),
+            hair_color_id=data.get("hair_color_id"),
+            skin_color_id=data.get("skin_color_id"),
+            gender_id=data.get("gender_id"),
+            name=data["name"],
+            birth_year=data.get("birth_year"),
+            height=data["height"],
+            mass=data["mass"]
+        )
+        db.session.add(new_character)
+        db.session.commit()
+        return jsonify(new_character.serialize()), 201
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/people/<int:character_id>", methods=["DELETE"])
+def delete_character(character_id):
+    try:
+        character = Character.query.get(character_id)
+        if character is not None:
+            db.session.delete(character)
+            db.session.commit()
+        return (""), 204
     except Exception as e:
         return jsonify({ "message": str(e) }), 500
 

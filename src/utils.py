@@ -25,6 +25,47 @@ def generate_sitemap(app):
         <p>Remember to specify a real endpoint path like: </p>
         <ul style="text-align: left;">"""+links_html+"</ul></div>"
 
+def validate_character(payload):
+    errors = dict()
+    missing_keys = set(["name", "height", "mass"])
+    optional_keys = set(["homeworld_id", "eye_color_id", "hair_color_id", "skin_color_id", "gender_id", "birth_year"])
+    extra_keys = []
+
+    for key in payload:
+        value = payload[key]
+        if key in missing_keys:
+            if key == "name":
+                if not isinstance(value, str):
+                    errors["name"] = "The name should be a string"
+                elif len(value) == 0:
+                    errors["name"] = "The name should be a non empty string"
+                missing_keys.remove("name")
+            else:
+                if not isinstance(value, float) and not isinstance(value, int):
+                    errors[key] = f"The {key} should be a real number"
+                elif value < 0:
+                    errors[key] = f"The {key} should be a non negative number"
+                missing_keys.remove(key)
+        elif key in optional_keys:
+            if key == "birth_year":
+                if not isinstance(value, str):
+                    errors["name"] = "The birth year should be a string"
+                elif len(value) == 0:
+                    errors["name"] = "The birth year should be a non empty string"
+            else:
+                if not isinstance(value, int):
+                    errors[key] = f"The {key} should be an integer"
+        else:
+            extra_keys.append(key)
+        
+    if len(missing_keys) > 0:
+        errors["missing_keys"] = ",".join(missing_keys)
+    
+    if len(extra_keys) > 0:
+        errors["extra_keys"] = ",".join(extra_keys)
+    
+    return (not bool(errors), errors)
+
 def validate_color(payload):
     errors = dict()
     missing_keys = set(["name"])
