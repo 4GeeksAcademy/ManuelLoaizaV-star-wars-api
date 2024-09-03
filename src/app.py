@@ -7,7 +7,7 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from utils import generate_sitemap, validate_color, validate_gender, validate_planet
 from admin import setup_admin
-from models import db, Character, Color, Gender, Planet, User
+from models import db, Character, Color, Entity, Gender, Planet, User
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -39,6 +39,71 @@ class InvalidAPIUsage(Exception):
         rv["message"] = self.message
         return rv
 
+@app.route("/populate")
+def populate_db():
+    try:
+        manuel = User(email="manuel@4geeks.com", hashed_password="GzY0J2NkXIzKNSz8gE6eNw==", is_active=True)
+        astrid = User(email="astrid@4geeks.com", hashed_password="6W4A/Rclf3zB4Wb1wopFWA==", is_active=True)
+        frank = User(email="frank@4geeks.com", hashed_password="o1UZkTS9WDb1Baw7t6/Utg==", is_active=False)
+        david = User(email="david@4geeks.com", hashed_password="JOSCvfkN5ilidJ/jBXC1oA==", is_active=True)
+        db.session.add(manuel)
+        db.session.add(frank)
+        db.session.add(astrid)
+        db.session.add(david)
+
+        tatooine = Planet(
+            name="Tatooine",
+            rotation_period=23, 
+            orbital_period=304, 
+            diameter=10465,
+            gravity=1,
+            surface_water=1, 
+            population=200000,
+        )
+        alderaan = Planet(
+            name="Alderaan",
+            rotation_period=24,
+            orbital_period=364,
+            diameter=12500,
+            gravity=1,
+            surface_water=40,
+            population=2000000000,
+        )
+        db.session.add(tatooine)
+        db.session.add(alderaan)
+
+        blue = Color(name="blue")
+        green = Color(name="green")
+        black = Color(name="black")
+        fair = Color(name="fair")
+        blond = Color(name="blond")
+        db.session.add(blue)
+        db.session.add(black)
+        db.session.add(green)
+        db.session.add(fair)
+        db.session.add(blond)
+
+        male = Gender(name="Male")
+        female = Gender(name="Female")
+        unknown = Gender(name="Unknown")
+        db.session.add(male)
+        db.session.add(female)
+        db.session.add(unknown)
+
+        character = Entity(name="Character", path="people")
+        planet = Entity(name="Planet", path="planets")
+        vehicle = Entity(name="Vehicle", path="vehicles")
+        starship = Entity(name="Starship", path="starships")
+        db.session.add(character)
+        db.session.add(planet)
+        db.session.add(vehicle)
+        db.session.add(starship)
+
+        db.session.commit()
+        return (""), 204
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
 @app.errorhandler(InvalidAPIUsage)
 def invalid_api_usage(e):
     return jsonify(e.to_dict()), e.status_code
@@ -47,6 +112,24 @@ def invalid_api_usage(e):
 @app.route('/')
 def sitemap():
     return generate_sitemap(app)
+
+@app.route("/entities")
+def fetch_entities():
+    try:
+        entities = Entity.query.all()
+        return jsonify(list(map(lambda entity: entity.serialize(), entities))), 200
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/entities/<int:entity_id>")
+def fetch_entity_by_id(entity_id):
+    try:
+        entity = Entity.query.get(entity_id)
+        if entity is None:
+            return jsonify({ "message": f"Entity with ID {entity_id} not found." }), 404
+        return jsonify(entity.serialize()), 200
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
 
 @app.route("/genders")
 def fetch_genders():

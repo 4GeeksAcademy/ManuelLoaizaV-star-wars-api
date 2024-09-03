@@ -1,6 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from enum import Enum
 
 db = SQLAlchemy()
 
@@ -107,4 +106,21 @@ class Character(db.Model):
             "gender_id": self.gender_id,
             "height": self.height,
             "mass": self.mass
+        }
+
+class Entity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False, unique=True)
+    path = db.Column(db.String, nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+
+    def __repr__(self):
+        return f"<Entity {self.name}>"
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "path": self.path
         }
