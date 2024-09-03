@@ -301,12 +301,42 @@ def create_character():
             payload=errors
         )
     try:
+        homeworld_id = data.get("homeworld_id")
+        if homeworld_id is not None:
+            homeworld = Planet.query.get(homeworld_id)
+            if homeworld is None:
+                return jsonify({ "message": f"Planet with ID {homeworld_id} not found." }), 404
+
+        eye_color_id = data.get("eye_color_id")
+        if eye_color_id is not None:
+            eye_color = Color.query.get(eye_color_id)
+            if eye_color is None:
+                return jsonify({ "message": f"Color with ID {eye_color_id} not found." }), 404
+
+        hair_color_id = data.get("hair_color_id")
+        if hair_color_id is not None:
+            hair_color = Color.query.get(hair_color_id)
+            if hair_color is None:
+                return jsonify({ "message": f"Color with ID {hair_color_id} not found." }), 404
+        
+        skin_color_id=data.get("skin_color_id")
+        if skin_color_id is not None:
+            skin_color = Color.query.get(skin_color_id)
+            if skin_color is None:
+                return jsonify({ "message": f"Color with ID {skin_color_id} not found." }), 404
+        
+        gender_id = data.get("gender_id")
+        if gender_id is not None:
+            gender = Gender.query.get(gender_id)
+            if gender is None:
+                return jsonify({ "message": f"Gender with ID {gender_id} not found." }), 404
+
         new_character = Character(
-            homeworld_id=data.get("homeworld_id"),
-            eye_color_id=data.get("eye_color_id"),
-            hair_color_id=data.get("hair_color_id"),
-            skin_color_id=data.get("skin_color_id"),
-            gender_id=data.get("gender_id"),
+            homeworld_id=homeworld_id,
+            eye_color_id=eye_color_id,
+            hair_color_id=hair_color_id,
+            skin_color_id=skin_color_id,
+            gender_id=gender_id,
             name=data["name"],
             birth_year=data.get("birth_year"),
             height=data["height"],
