@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from enum import Enum
 
 db = SQLAlchemy()
 
@@ -38,13 +39,12 @@ class Color(db.Model):
 class Planet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, nullable=False)
-    diameter = db.Column(db.Integer)
-    rotation_period = db.Column(db.Integer, nullable=False)
-    orbital_period = db.Column(db.Integer, nullable=False)
+    diameter = db.Column(db.Float, nullable=False)
+    rotation_period = db.Column(db.Float, nullable=False)
+    orbital_period = db.Column(db.Float, nullable=False)
     gravity = db.Column(db.Float, nullable=False)
-    population = db.Column(db.Integer)
-    surface_water = db.Column(db.Float)
-    url = db.Column(db.String, nullable=False)
+    population = db.Column(db.Integer, nullable=False)
+    surface_water = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
 
@@ -53,6 +53,7 @@ class Planet(db.Model):
     
     def serialize(self):
         return {
+            "id": self.id,
             "name": self.name,
             "diameter": self.diameter,
             "rotation_period": self.rotation_period,
@@ -88,7 +89,6 @@ class Character(db.Model):
     birth_year = db.Column(db.String)
     height = db.Column(db.Float, nullable=False)
     mass = db.Column(db.Float, nullable=False)
-    url = db.Column(db.String, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
 

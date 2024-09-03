@@ -51,3 +51,51 @@ def validate_color(payload):
 
 def validate_gender(payload):
     return validate_color(payload)
+
+def validate_planet(payload):
+    errors = dict()
+    missing_keys = set(["name", "rotation_period", "orbital_period", "gravity", "diameter", "surface_water", "population"])
+    extra_keys = []
+    
+    for key in payload:
+        value = payload[key]
+        if key == "name":
+            if not isinstance(value, str):
+                errors["name"] = "The name should be a string"
+            elif len(value) == 0:
+                errors["name"] = "The name should be a non empty string"
+            missing_keys.remove("name")
+        elif key == "rotation_period" or key == "orbital_period" or key == "diameter":
+            if not isinstance(value, float) and not isinstance(value, int):
+                errors[key] = f"The {key} should be a real number"
+            elif value <= 0:
+                errors[key] = f"The {key} should be positive"
+            missing_keys.remove(key)
+        elif key == "gravity":
+            if not isinstance(value, float) and not isinstance(value, int):
+                errors["gravity"] = "The gravity should be a real number"
+            elif value < 0:
+                errors["gravity"] = "The gravity should be a non negative number"
+            missing_keys.remove("gravity")
+        elif key == "surface_water":
+            if not isinstance(value, float) and not isinstance(value, int):
+                errors["surface_water"] = "The surface water should be a real number"
+            elif value < 0 or value > 100:
+                errors["surface_water"] = "The surface water should be a real number in [0, 100]"
+            missing_keys.remove("surface_water")
+        elif key == "population":
+            if not isinstance(value, int):
+                errors["population"] = "The population should be an integer"
+            elif value < 0:
+                errors["population"] = f"The population should be a non negative integer"
+            missing_keys.remove("population")
+        else:
+            extra_keys.append(key)
+    
+    if len(missing_keys) > 0:
+        errors["missing_keys"] = ",".join(missing_keys)
+    
+    if len(extra_keys) > 0:
+        errors["extra_keys"] = ",".join(extra_keys)
+    
+    return (not bool(errors), errors)

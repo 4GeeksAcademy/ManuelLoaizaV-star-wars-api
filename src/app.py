@@ -5,7 +5,7 @@ import os
 from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from flask_cors import CORS
-from utils import generate_sitemap, validate_color, validate_gender
+from utils import generate_sitemap, validate_color, validate_gender, validate_planet
 from admin import setup_admin
 from models import db, Character, Color, Gender, Planet, User
 
@@ -169,12 +169,49 @@ def fetch_planets():
         return jsonify({ "message": str(e) }), 500
 
 @app.route("/planets/<int:planet_id>")
-def fetch_planet(planet_id):
+def fetch_planet_by_id(planet_id):
     try:
         planet = Planet.query.get(planet_id)
         if planet is None:
             return jsonify({ "message": f"Planet with ID {planet_id} not found." }), 404
         return jsonify(planet.serialize()), 200
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/planets", methods=["POST"])
+def create_planet():
+    data = request.json
+    is_valid, errors = validate_planet(data)
+    if not is_valid:
+        raise InvalidAPIUsage(
+            message="Unprocessable Entity",
+            status_code=422,
+            payload=errors
+        )
+    try:
+        new_planet = Planet(
+            name=data["name"],
+            diameter=data["diameter"],
+            rotation_period=data["rotation_period"],
+            orbital_period=data["orbital_period"],
+            gravity=data["gravity"],
+            population=data["population"],
+            surface_water=data["surface_water"]
+        )
+        db.session.add(new_planet)
+        db.session.commit()
+        return jsonify(new_planet.serialize()), 201
+    except Exception as e:
+        return jsonify({ "message": str(e) }), 500
+
+@app.route("/planets/<int:planet_id>", methods=["DELETE"])
+def delete_planet(planet_id):
+    try:
+        planet = Planet.query.get(planet_id)
+        if planet is not None:
+            db.session.delete(planet)
+            db.session.commit()
+        return (""), 204
     except Exception as e:
         return jsonify({ "message": str(e) }), 500
 
